@@ -10,6 +10,7 @@
 
       <!-- UIkit & Custom JS -->
       <script type="text/javascript" src="scripts/script.js"></script>
+      <script type="text/javascript" src="scripts/custom_plan.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/uikit@3.3.7/dist/js/uikit.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/uikit@3.3.7/dist/js/uikit-icons.min.js"></script>
 
@@ -25,7 +26,7 @@
       /* Set Reading Plan from local JSON file and current Date */
       /* JSON: "date": "2020-12-1T09:00:00.000Z" */
       var today = new Date();
-      $.getJSON('reading_plan/reading_plan_brisbane_yp.json', function(data) {
+      function renderReadingPlan(data) {
           for (var i = 0; i < data.length; i++) {
               /* Match Today's Date */
               var readingPlanDateSplit = (data[i].date).split("-");
@@ -47,6 +48,7 @@
                   readingPlanDateSplit[2] === day.toString()) {
                   for (var j = 0; j < 15; j++) {
                       var reading_id = "reading-" + j;
+                      if (typeof data[i - j] === 'undefined') continue;
                       var reading_split = data[i - j]["reading"].split(";");
 
                       /* NT Title */
@@ -77,6 +79,16 @@
 
           }
 
+      }
+
+      $(function() {
+          initCustomPlanModal();
+          var customPlan = getCustomPlan();
+          if (customPlan && customPlan.length > 0) {
+              renderReadingPlan(customPlan);
+          } else {
+              $.getJSON('reading_plan/reading_plan_brisbane_yp.json', renderReadingPlan);
+          }
       });
     </script>
 
@@ -369,6 +381,47 @@
     </div>
 
 
+
+    <!-- Custom Plan Settings -->
+    <div class="uk-text-center uk-margin-top uk-margin-bottom">
+        <button type="button" class="custom-plan-settings-button" uk-toggle="target: #custom-plan-modal">
+            <img src="https://img.icons8.com/ios-filled/20/000000/settings.png"/>
+            Custom Reading Plan
+        </button>
+    </div>
+
+    <div id="custom-plan-modal" uk-modal>
+        <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+            <button class="uk-modal-close-default" type="button" uk-close></button>
+            <h2 class="uk-modal-title">Custom Reading Plan</h2>
+            <p class="uk-text-muted">Pick a book, chapter range, and start date to generate your own daily reading schedule.</p>
+
+            <div class="uk-margin">
+                <label class="uk-form-label">Book</label>
+                <select id="custom-plan-book" class="uk-select"></select>
+            </div>
+            <div class="uk-margin">
+                <label class="uk-form-label">Start Chapter</label>
+                <input id="custom-plan-start-chapter" class="uk-input" type="number" min="1" value="1">
+            </div>
+            <div class="uk-margin">
+                <label class="uk-form-label">End Chapter</label>
+                <input id="custom-plan-end-chapter" class="uk-input" type="number" min="1" value="1">
+            </div>
+            <div class="uk-margin">
+                <label class="uk-form-label">Start Date</label>
+                <input id="custom-plan-start-date" class="uk-input" type="date">
+            </div>
+
+            <p id="custom-plan-status" class="uk-text-small uk-text-muted"></p>
+
+            <div class="uk-margin uk-text-right">
+                <button type="button" class="uk-button uk-button-default uk-modal-close">Cancel</button>
+                <button type="button" class="uk-button uk-button-default" onclick="resetCustomPlan()">Use Default Plan</button>
+                <button type="button" class="uk-button uk-button-primary" onclick="applyCustomPlan()">Generate Plan</button>
+            </div>
+        </div>
+    </div>
 
     <script>
       /* Set Date for Date Cards */

@@ -193,6 +193,34 @@ button:focus {
     font-style: italic;
 }
 
+/* Custom Plan Settings Button */
+.custom-plan-settings-button {
+    height: auto;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    color: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    text-align: center;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.custom-plan-settings-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.custom-plan-settings-button img {
+    height: 16px;
+    width: 16px;
+    margin: 0;
+    float: none;
+}
+
 @media (max-width: 768px) {
     #copyright {
         padding-left: 10px;
