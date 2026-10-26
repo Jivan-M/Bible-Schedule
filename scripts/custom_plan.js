@@ -101,7 +101,7 @@ function clearCustomPlan() {
     localStorage.removeItem(CUSTOM_PLAN_KEY);
 }
 
-/* Build the ordered list of "Book chapter" strings from a start point to an end point. */
+/* Build the ordered list of {book, chapter} objects from a start point to an end point. */
 function generateReadingList(startBookIdx, startChapter, endBookIdx, endChapter) {
     var readings = [];
     for (var i = startBookIdx; i <= endBookIdx; i++) {
@@ -109,10 +109,36 @@ function generateReadingList(startBookIdx, startChapter, endBookIdx, endChapter)
         var firstCh = (i === startBookIdx) ? startChapter : 1;
         var lastCh = (i === endBookIdx) ? endChapter : book.chapters;
         for (var ch = firstCh; ch <= lastCh; ch++) {
-            readings.push(book.name + " " + ch);
+            readings.push({ book: book.name, chapter: ch });
         }
     }
     return readings;
+}
+
+/* Format a batch of chapter objects into a compact reading string.
+ * Consecutive chapters in the same book become a range: "John 1-3".
+ * Cross-book batches use "; ": "John 20-21; Acts 1-2". */
+function formatReadingBatch(batch) {
+    var groups = [];
+    var curBook = null, curStart = null, curEnd = null;
+    for (var i = 0; i < batch.length; i++) {
+        if (batch[i].book === curBook && batch[i].chapter === curEnd + 1) {
+            curEnd = batch[i].chapter;
+        } else {
+            if (curBook !== null) groups.push({ book: curBook, start: curStart, end: curEnd });
+            curBook = batch[i].book;
+            curStart = batch[i].chapter;
+            curEnd = batch[i].chapter;
+        }
+    }
+    if (curBook !== null) groups.push({ book: curBook, start: curStart, end: curEnd });
+    var parts = [];
+    for (var i = 0; i < groups.length; i++) {
+        parts.push(groups[i].start === groups[i].end
+            ? groups[i].book + " " + groups[i].start
+            : groups[i].book + " " + groups[i].start + "-" + groups[i].end);
+    }
+    return parts.join("; ");
 }
 
 /* Build the list of dates (YYYY-MM-DDT00:00:00.000Z) that fall on selected weekdays. */
@@ -133,9 +159,13 @@ function generateCustomPlan(startBookIdx, startChapter, endBookIdx, endChapter, 
     var readings = generateReadingList(startBookIdx, startChapter, endBookIdx, endChapter);
     var readingDays = generateReadingDays(startDateStr, endDateStr, selectedDays);
     var plan = [];
-    var count = Math.min(readings.length, readingDays.length);
-    for (var i = 0; i < count; i++) {
-        plan.push({ reading: readings[i], date: readingDays[i] });
+    var chaptersPerDay = Math.ceil(readings.length / readingDays.length);
+    var batchStart = 0;
+    for (var i = 0; i < readingDays.length && batchStart < readings.length; i++) {
+        var batchEnd = Math.min(batchStart + chaptersPerDay, readings.length);
+        var batch = readings.slice(batchStart, batchEnd);
+        plan.push({ reading: formatReadingBatch(batch), date: readingDays[i] });
+        batchStart = batchEnd;
     }
     return plan;
 }

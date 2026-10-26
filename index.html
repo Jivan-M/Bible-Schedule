@@ -49,30 +49,7 @@
                   for (var j = 0; j < 15; j++) {
                       var reading_id = "reading-" + j;
                       if (typeof data[i - j] === 'undefined') continue;
-                      var reading_split = data[i - j]["reading"].split(";");
-
-                      /* NT Title */
-                      // var nt_split = reading_split[0].split(" ");
-                      // if (nt_split[0] === "1" || nt_split[0] === "2" || nt_split[0] === "2") {
-                      //     nt_split[0] += " " + nt_split[1];
-                      //     nt_split[1] = nt_split[2];
-                      //     nt_split.splice(-1, 1)
-                      // }
-
-                      /* OT Title */
-                      var ot_split = reading_split[0].split(" ");
-                      // ot_split.shift();
-                      if (ot_split[0] === "1" || ot_split[0] === "2") {
-                          ot_split[0] += " " + ot_split[1];
-                          ot_split[1] = ot_split[2];
-                          ot_split.splice(-1, 1)
-                      }
-                      // var ot_book_title = get_full_book_name(ot_split[0]);
-                      // ot_split[0] = ot_book_title;
-
-                      /* Add to Screen and sessionStorage */
-                      // var full_title = nt_split.join(" ");// + "; " + ot_split.join(" ");
-                      var full_title = ot_split.join(" ");
+                      var full_title = data[i - j]["reading"];
                       document.getElementById(reading_id).getElementsByTagName('p')[0].innerHTML = full_title;
                   }
               }
