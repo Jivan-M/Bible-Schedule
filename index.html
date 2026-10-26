@@ -394,23 +394,45 @@
         <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
             <button class="uk-modal-close-default" type="button" uk-close></button>
             <h2 class="uk-modal-title">Custom Reading Plan</h2>
-            <p class="uk-text-muted">Pick a book, chapter range, and start date to generate your own daily reading schedule.</p>
+            <p class="uk-text-muted">Choose a reading range, date range, and the days you want to read on.</p>
 
             <div class="uk-margin">
-                <label class="uk-form-label">Book</label>
-                <select id="custom-plan-book" class="uk-select"></select>
+                <label class="uk-form-label">Start Book</label>
+                <select id="custom-plan-start-book" class="uk-select" onchange="updateChapterLimits()"></select>
             </div>
             <div class="uk-margin">
                 <label class="uk-form-label">Start Chapter</label>
                 <input id="custom-plan-start-chapter" class="uk-input" type="number" min="1" value="1">
             </div>
             <div class="uk-margin">
+                <label class="uk-form-label">End Book</label>
+                <select id="custom-plan-end-book" class="uk-select" onchange="updateChapterLimits()"></select>
+            </div>
+            <div class="uk-margin">
                 <label class="uk-form-label">End Chapter</label>
                 <input id="custom-plan-end-chapter" class="uk-input" type="number" min="1" value="1">
             </div>
+
             <div class="uk-margin">
                 <label class="uk-form-label">Start Date</label>
                 <input id="custom-plan-start-date" class="uk-input" type="date">
+            </div>
+            <div class="uk-margin">
+                <label class="uk-form-label">End Date</label>
+                <input id="custom-plan-end-date" class="uk-input" type="date">
+            </div>
+
+            <div class="uk-margin">
+                <label class="uk-form-label">Read on these days</label>
+                <div class="uk-flex uk-flex-wrap uk-grid-small" uk-grid>
+                    <label><input class="uk-checkbox weekday-check" type="checkbox" value="0"> Sun</label>
+                    <label><input class="uk-checkbox weekday-check" type="checkbox" value="1"> Mon</label>
+                    <label><input class="uk-checkbox weekday-check" type="checkbox" value="2"> Tue</label>
+                    <label><input class="uk-checkbox weekday-check" type="checkbox" value="3"> Wed</label>
+                    <label><input class="uk-checkbox weekday-check" type="checkbox" value="4"> Thu</label>
+                    <label><input class="uk-checkbox weekday-check" type="checkbox" value="5"> Fri</label>
+                    <label><input class="uk-checkbox weekday-check" type="checkbox" value="6"> Sat</label>
+                </div>
             </div>
 
             <p id="custom-plan-status" class="uk-text-small uk-text-muted"></p>
