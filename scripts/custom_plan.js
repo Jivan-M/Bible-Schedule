@@ -101,12 +101,12 @@ function clearCustomPlan() {
     localStorage.removeItem(CUSTOM_PLAN_KEY);
 }
 
-/* Build the list of dates (YYYY-MM-DDT00:00:00.000Z) that fall on selected weekdays. */
-function generateReadingDays(startDateStr, endDateStr, selectedDays) {
+/* Build the list of dates (YYYY-MM-DDT00:00:00.000Z) that fall on selected weekdays,
+ * starting from startDateStr and producing exactly `count` reading days. */
+function generateReadingDays(startDateStr, count, selectedDays) {
     var days = [];
     var d = new Date(startDateStr + "T00:00:00");
-    var end = new Date(endDateStr + "T00:00:00");
-    while (d <= end) {
+    while (days.length < count) {
         if (selectedDays.indexOf(d.getDay()) !== -1) {
             days.push(d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + "T00:00:00.000Z");
         }
@@ -115,8 +115,22 @@ function generateReadingDays(startDateStr, endDateStr, selectedDays) {
     return days;
 }
 
-function generateCustomPlan(startBookIdx, startChapter, startDateStr, endDateStr, selectedDays) {
-    var readingDays = generateReadingDays(startDateStr, endDateStr, selectedDays);
+/* Count remaining chapters from a start point to the end of the Bible. */
+function countRemainingChapters(startBookIdx, startChapter) {
+    var total = 0;
+    for (var i = startBookIdx; i < BIBLE_BOOKS.length; i++) {
+        if (i === startBookIdx) {
+            total += BIBLE_BOOKS[i].chapters - startChapter + 1;
+        } else {
+            total += BIBLE_BOOKS[i].chapters;
+        }
+    }
+    return total;
+}
+
+function generateCustomPlan(startBookIdx, startChapter, startDateStr, selectedDays) {
+    var totalChapters = countRemainingChapters(startBookIdx, startChapter);
+    var readingDays = generateReadingDays(startDateStr, totalChapters, selectedDays);
     var plan = [];
     var curBookIdx = startBookIdx;
     var curChapter = startChapter;
@@ -144,14 +158,10 @@ function initCustomPlanModal() {
 
     updateChapterLimits();
 
-    // Default dates to today and 30 days from now
+    // Default date to today
     var today = new Date();
     var todayStr = today.getFullYear() + "-" + pad2(today.getMonth() + 1) + "-" + pad2(today.getDate());
-    var end = new Date(today);
-    end.setDate(end.getDate() + 30);
-    var endStr = end.getFullYear() + "-" + pad2(end.getMonth() + 1) + "-" + pad2(end.getDate());
     document.getElementById('custom-plan-start-date').value = todayStr;
-    document.getElementById('custom-plan-end-date').value = endStr;
 
     // Default all weekdays checked
     var checks = document.querySelectorAll('.weekday-check');
@@ -198,10 +208,9 @@ function applyCustomPlan() {
     var startBookIdx = parseInt(document.getElementById('custom-plan-start-book').value, 10);
     var startChapter = parseInt(document.getElementById('custom-plan-start-chapter').value, 10);
     var startDateStr = document.getElementById('custom-plan-start-date').value;
-    var endDateStr = document.getElementById('custom-plan-end-date').value;
     var selectedDays = getSelectedDays();
 
-    if (isNaN(startBookIdx) || isNaN(startChapter) || !startDateStr || !endDateStr) {
+    if (isNaN(startBookIdx) || isNaN(startChapter) || !startDateStr) {
         alert('Please fill in all fields.');
         return;
     }
@@ -210,9 +219,9 @@ function applyCustomPlan() {
         return;
     }
 
-    var plan = generateCustomPlan(startBookIdx, startChapter, startDateStr, endDateStr, selectedDays);
+    var plan = generateCustomPlan(startBookIdx, startChapter, startDateStr, selectedDays);
     if (plan.length === 0) {
-        alert('No reading days fall within the selected date range.');
+        alert('Could not generate a plan.');
         return;
     }
     saveCustomPlan(plan);
