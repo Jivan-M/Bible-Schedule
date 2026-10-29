@@ -101,15 +101,18 @@ function clearCustomPlan() {
     localStorage.removeItem(CUSTOM_PLAN_KEY);
 }
 
-/* Build the ordered list of {book, chapter} objects from a start point to an end point. */
-function generateReadingList(startBookIdx, startChapter, endBookIdx, endChapter) {
+/* Build the ordered list of {book, chapter} objects starting from a point,
+ * collecting exactly `count` chapters and continuing across book boundaries. */
+function generateReadingList(startBookIdx, startChapter, count) {
     var readings = [];
-    for (var i = startBookIdx; i <= endBookIdx; i++) {
-        var book = BIBLE_BOOKS[i];
-        var firstCh = (i === startBookIdx) ? startChapter : 1;
-        var lastCh = (i === endBookIdx) ? endChapter : book.chapters;
-        for (var ch = firstCh; ch <= lastCh; ch++) {
-            readings.push({ book: book.name, chapter: ch });
+    var bookIdx = startBookIdx;
+    var ch = startChapter;
+    while (readings.length < count && bookIdx < BIBLE_BOOKS.length) {
+        readings.push({ book: BIBLE_BOOKS[bookIdx].name, chapter: ch });
+        ch++;
+        if (ch > BIBLE_BOOKS[bookIdx].chapters) {
+            bookIdx++;
+            ch = 1;
         }
     }
     return readings;
@@ -155,24 +158,32 @@ function generateReadingDays(startDateStr, endDateStr, selectedDays) {
     return days;
 }
 
-function generateCustomPlan(startBookIdx, startChapter, endBookIdx, endChapter, startDateStr, endDateStr, selectedDays) {
-    var readings = generateReadingList(startBookIdx, startChapter, endBookIdx, endChapter);
+function generateCustomPlan(startBookIdx, startChapter, chaptersPerDay, startDateStr, endDateStr, selectedDays) {
     var readingDays = generateReadingDays(startDateStr, endDateStr, selectedDays);
     var plan = [];
-    var chaptersPerDay = Math.ceil(readings.length / readingDays.length);
-    var batchStart = 0;
-    for (var i = 0; i < readingDays.length && batchStart < readings.length; i++) {
-        var batchEnd = Math.min(batchStart + chaptersPerDay, readings.length);
-        var batch = readings.slice(batchStart, batchEnd);
+    var curBookIdx = startBookIdx;
+    var curChapter = startChapter;
+    for (var i = 0; i < readingDays.length && curBookIdx < BIBLE_BOOKS.length; i++) {
+        var batch = generateReadingList(curBookIdx, curChapter, chaptersPerDay);
         plan.push({ reading: formatReadingBatch(batch), date: readingDays[i] });
-        batchStart = batchEnd;
+        var last = batch[batch.length - 1];
+        curChapter = last.chapter + 1;
+        for (var b = 0; b < BIBLE_BOOKS.length; b++) {
+            if (BIBLE_BOOKS[b].name === last.book) {
+                curBookIdx = b;
+                break;
+            }
+        }
+        if (curChapter > BIBLE_BOOKS[curBookIdx].chapters) {
+            curBookIdx++;
+            curChapter = 1;
+        }
     }
     return plan;
 }
 
 function initCustomPlanModal() {
     var startSelect = document.getElementById('custom-plan-start-book');
-    var endSelect = document.getElementById('custom-plan-end-book');
     if (!startSelect || startSelect.options.length > 0) return;
 
     for (var i = 0; i < BIBLE_BOOKS.length; i++) {
@@ -180,15 +191,8 @@ function initCustomPlanModal() {
         opt1.value = i;
         opt1.text = BIBLE_BOOKS[i].name;
         startSelect.appendChild(opt1);
-
-        var opt2 = document.createElement('option');
-        opt2.value = i;
-        opt2.text = BIBLE_BOOKS[i].name;
-        endSelect.appendChild(opt2);
     }
 
-    // Default end book to the last book
-    endSelect.value = String(BIBLE_BOOKS.length - 1);
     updateChapterLimits();
 
     // Default dates to today and 30 days from now
@@ -211,15 +215,10 @@ function initCustomPlanModal() {
 
 function updateChapterLimits() {
     var startBookIdx = parseInt(document.getElementById('custom-plan-start-book').value, 10);
-    var endBookIdx = parseInt(document.getElementById('custom-plan-end-book').value, 10);
     var startChInput = document.getElementById('custom-plan-start-chapter');
-    var endChInput = document.getElementById('custom-plan-end-chapter');
 
     if (!isNaN(startBookIdx)) {
         startChInput.max = BIBLE_BOOKS[startBookIdx].chapters;
-    }
-    if (!isNaN(endBookIdx)) {
-        endChInput.max = BIBLE_BOOKS[endBookIdx].chapters;
     }
 }
 
@@ -249,22 +248,17 @@ function updateCustomPlanStatus() {
 function applyCustomPlan() {
     var startBookIdx = parseInt(document.getElementById('custom-plan-start-book').value, 10);
     var startChapter = parseInt(document.getElementById('custom-plan-start-chapter').value, 10);
-    var endBookIdx = parseInt(document.getElementById('custom-plan-end-book').value, 10);
-    var endChapter = parseInt(document.getElementById('custom-plan-end-chapter').value, 10);
+    var chaptersPerDay = parseInt(document.getElementById('custom-plan-chapters-per-day').value, 10);
     var startDateStr = document.getElementById('custom-plan-start-date').value;
     var endDateStr = document.getElementById('custom-plan-end-date').value;
     var selectedDays = getSelectedDays();
 
-    if (isNaN(startBookIdx) || isNaN(startChapter) || isNaN(endBookIdx) || isNaN(endChapter) || !startDateStr || !endDateStr) {
+    if (isNaN(startBookIdx) || isNaN(startChapter) || isNaN(chaptersPerDay) || !startDateStr || !endDateStr) {
         alert('Please fill in all fields.');
         return;
     }
-    if (endBookIdx < startBookIdx) {
-        alert('End book must come after or match the start book.');
-        return;
-    }
-    if (startBookIdx === endBookIdx && endChapter < startChapter) {
-        alert('End chapter must be greater than or equal to start chapter within the same book.');
+    if (chaptersPerDay < 1) {
+        alert('Chapters per day must be at least 1.');
         return;
     }
     if (selectedDays.length === 0) {
@@ -272,7 +266,7 @@ function applyCustomPlan() {
         return;
     }
 
-    var plan = generateCustomPlan(startBookIdx, startChapter, endBookIdx, endChapter, startDateStr, endDateStr, selectedDays);
+    var plan = generateCustomPlan(startBookIdx, startChapter, chaptersPerDay, startDateStr, endDateStr, selectedDays);
     if (plan.length === 0) {
         alert('No reading days fall within the selected date range.');
         return;
