@@ -225,12 +225,19 @@ function applyCustomPlan() {
         return;
     }
     saveCustomPlan(plan);
+    localStorage.setItem('custom_plan_params', JSON.stringify({
+        startBookIdx: startBookIdx,
+        startChapter: startChapter,
+        startDateStr: startDateStr,
+        selectedDays: selectedDays
+    }));
     UIkit.modal('#custom-plan-modal').hide();
     window.location.reload();
 }
 
 function resetCustomPlan() {
     clearCustomPlan();
+    localStorage.removeItem('custom_plan_params');
     UIkit.modal('#custom-plan-modal').hide();
     window.location.reload();
 }
